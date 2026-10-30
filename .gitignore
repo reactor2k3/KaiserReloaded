@@ -1,0 +1,19 @@
+# Abhängigkeiten und Builds
+client/node_modules/
+client/dist/
+server/kaiserd*
+server/healthcheck*
+*.exe
+
+# Laufzeitdaten: Spielstände und Uploads gehören nicht ins Repository
+server/kaiser.db*
+server/media/
+*.db
+*.db-*
+
+# Lokales
+.env
+*.log
+__pycache__/
+.vscode/
+.idea/

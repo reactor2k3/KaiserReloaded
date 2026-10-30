@@ -1,0 +1,28 @@
+{
+  "_kommentar": "Spielbalance. classic=true schaltet alle Regeln des Vorbilds ein; die übrigen Werte gelten nur für das Remake.",
+  "classic": false,
+  "start": {
+    "land": 10000,
+    "treasury": 15000,
+    "population": 2000,
+    "grain": 10000,
+    "customs": 25,
+    "vat": 10,
+    "incomeTax": 5,
+    "justice": 2,
+    "deathYearMin": 1760,
+    "deathYearMax": 1780,
+    "startYear": 1700,
+    "title": 1
+  },
+  "rotMinPercent": 5,
+  "rotMaxPercent": 25,
+  "rotReductionPerMill": 1,
+  "creditPerTitle": 5000,
+  "interestOnCredit": 0.10,
+  "interestOnSavings": 0.03,
+  "phaseSeconds": 90,
+  "minPopulation": 382,
+  "_countryArea": "Hektar je Land; bis zu drei Herrscher teilen sich diese Fläche (Landkauf nur aus freier Fläche).",
+  "countryArea": 50000
+}

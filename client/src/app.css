@@ -1,0 +1,358 @@
+/* Design-Tokens aus der Vorschau (Pergament, Tinte, Ochsenblut, Gold).
+   Ein späterer C64-Skin überschreibt nur diese Variablen und die Schriften. */
+:root {
+  --parchment: #f6eedb;
+  --ground: #ede2c8;
+  --ground-dark: #e5d8ba;
+  --ink: #2b2118;
+  --ink-soft: #3d3024;
+  --sepia: #5e4e3d;
+  --line: #cdbb94;
+  --line-strong: #6b5537;
+  --blood: #7a1f1f;
+  --blood-dark: #5a1414;
+  --prussian: #1f3a5f;
+  --gold: #b08a3e;
+  --gold-light: #e9d6a3;
+  --good: #3e6b2a;
+  --warn: #8a3b12;
+  --font-display: 'UnifrakturMaguntia', serif;
+  --font-label: 'Cinzel', serif;
+  --font-body: 'EB Garamond', Georgia, serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+
+/* Keine Seite scrollt als Ganzes; Scrollbereiche sind immer einzelne Container. */
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+}
+
+button, input, select { font: inherit; color: inherit; }
+
+/* Wiederverwendbare Bausteine */
+/* Karte: Rahmen und Pergament kommen aus dem Zierrahmen weiter unten (border-image). */
+.card { padding: 16px 20px; }
+
+.display { font-family: var(--font-display); font-weight: 400; margin: 0; }
+.label { font-family: var(--font-label); font-size: 12px; letter-spacing: .12em; color: var(--sepia); text-transform: uppercase; }
+.num { font-variant-numeric: tabular-nums; }
+
+.btn {
+  min-height: 44px;
+  padding: 0 22px;
+  border-radius: 4px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  font-family: var(--font-label);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .05em;
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) { background: var(--ground-dark); }
+.btn-primary { background: var(--blood); border-color: var(--blood); color: var(--parchment); }
+.btn-primary:hover:not(:disabled) { background: var(--blood-dark); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field input, .field select {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #a8987c;
+  border-radius: 4px;
+  background: #fbf6ea;
+}
+input[type=range], input[type=checkbox], input[type=radio] { accent-color: var(--blood); }
+
+.noscript { padding: 24px; font-size: 20px; }
+
+/* Gemeinsamer Tooltip (lib/tooltip.ts) statt grauem System-Tooltip: kleines Pergamentschild
+   mit dunkler Fassung, Goldfaden und Zeiger zum Element. */
+.tooltip {
+  position: fixed; inset: auto; margin: 0; z-index: 1000; max-width: 280px; padding: 5px 10px;
+  background: linear-gradient(180deg, #fffaf0, #f1e3c4); color: var(--ink);
+  border: 1.5px solid #5a4630; border-radius: 3px;
+  box-shadow: inset 0 0 0 2px #fffaf0, inset 0 0 0 3px #b08a3e99, 0 6px 16px #00000055;
+  font-family: var(--font-body); font-size: 15px; line-height: 1.3; text-align: center; pointer-events: none;
+  opacity: 0; transform: translateY(-3px); transition: opacity .12s ease, transform .12s ease; overflow: visible;
+}
+.tooltip.sichtbar { opacity: 1; transform: none; }
+.tooltip::before {
+  content: ''; position: absolute; top: -6px; left: calc(var(--zeiger, 50%) - 5px); width: 10px; height: 10px;
+  background: #fffaf0; border-left: 1.5px solid #5a4630; border-top: 1.5px solid #5a4630; transform: rotate(45deg);
+}
+.tooltip.oben::before { top: auto; bottom: -6px; background: #f1e3c4; border: none; border-right: 1.5px solid #5a4630; border-bottom: 1.5px solid #5a4630; }
+:root[data-skin="c64"] .tooltip { background: #000; color: #b8c76f; border: 2px solid #b8c76f; border-radius: 0; box-shadow: none; font-family: var(--font-label); font-size: 10px; }
+:root[data-skin="c64"] .tooltip::before { display: none; }
+
+/* ---------------------------------------------------------------------------
+   Eingabefelder mit schwebender Beschriftung („Kartusche“), Stil 17. Jahrhundert.
+   Aufbau: <label class="feld"><input placeholder=" "><span class="feld-label">Name</span></label>
+   Die Beschriftung liegt im leeren Feld wie kursive Tinte und steigt beim Schreiben
+   als Kapitälchen-Kartusche mit Fleurons auf die Rahmenlinie. Beispieltexte im
+   placeholder erscheinen erst beim Fokus. Auswahllisten nutzen dieselbe Kartusche (Auswahl float).
+   --------------------------------------------------------------------------- */
+.feld { position: relative; display: block; min-width: 0; }
+.feld input {
+  width: 100%; min-height: 54px; padding: 20px 14px 6px;
+  border: 1px solid #8a7350; border-radius: 3px;
+  background: linear-gradient(180deg, #fdf9ef, #f5ead2);
+  /* Doppellinie: Pergamentstreifen, feiner Goldfaden, leichte Mulde */
+  box-shadow: inset 0 0 0 3px #fdf9ef, inset 0 0 0 4px #c9a95c99, inset 0 3px 8px #6b553722;
+  font-family: var(--font-body); font-size: 18px; color: var(--ink);
+  transition: border-color .15s, box-shadow .15s;
+}
+.feld input::placeholder { color: transparent; transition: color .15s; }
+.feld input:focus::placeholder { color: #a8987c; font-style: italic; }
+.feld input:hover:not(:disabled) { border-color: #6b5537; }
+.feld input:focus, .feld input:focus-visible {
+  outline: none; border-color: var(--blood);
+  /* Fokus nur nach innen (Goldglanz), damit nichts an Spaltenrändern abgeschnitten wird */
+  box-shadow: inset 0 0 0 3px #fdf9ef, inset 0 0 0 4px #b08a3ecc, inset 0 3px 8px #6b553722, inset 0 0 0 6px #b08a3e22;
+}
+.feld input:disabled { opacity: .55; }
+
+/* Zahlenfelder: System-Pfeile ausblenden; eigene Pfeile (.stepper) im Spieldesign */
+input[type=number] { appearance: textfield; -moz-appearance: textfield; }
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.feld input[type=number] { padding-right: 40px; }
+.feld .stepper {
+  position: absolute; right: 5px; top: 5px; bottom: 5px; width: 28px;
+  display: flex; flex-direction: column; border-left: 1px solid #c9a95c99;
+}
+.feld .stepper button {
+  flex: 1; display: flex; align-items: center; justify-content: center; padding: 0;
+  border: none; background: transparent; color: var(--gold); cursor: pointer;
+}
+.feld .stepper button + button { border-top: 1px solid #c9a95c66; }
+.feld .stepper svg { width: 12px; height: 8px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.feld .stepper button:hover:not(:disabled) { color: var(--blood); background: #efe0c4; }
+.feld .stepper button:disabled { opacity: .35; cursor: default; }
+:root[data-skin="c64"] .feld .stepper { border-color: #b8c76f; }
+:root[data-skin="c64"] .feld .stepper button { color: #b8c76f; }
+.feld input[readonly] { background: #f3ead6; color: var(--sepia); }
+
+.feld-label {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; gap: 5px; padding: 0 6px; max-width: calc(100% - 20px);
+  font-family: var(--font-body); font-style: italic; font-size: 18px; color: var(--sepia);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none;
+  transition: top .18s ease, transform .18s ease, font-size .18s ease, color .18s ease, letter-spacing .18s ease;
+}
+/* Fleurons links und rechts erscheinen erst, wenn die Kartusche oben sitzt */
+.feld-label::before, .feld-label::after { content: '❦'; font-style: normal; font-size: 0; color: var(--gold); transition: font-size .18s ease; }
+.feld-label::before { transform: scaleX(-1); }
+.feld input:focus + .feld-label, .feld input:not(:placeholder-shown) + .feld-label, .feld-label.oben {
+  top: 0; transform: translateY(-50%);
+  font-family: var(--font-label); font-style: normal; font-size: 11.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink);
+  /* Kartusche schneidet die Rahmenlinie: oben Kartengrund, unten Feldfarbe */
+  background: linear-gradient(180deg, var(--parchment) 50%, #fdf9ef 50%);
+  border-radius: 2px;
+}
+.feld input:focus + .feld-label { color: var(--blood); }
+.feld input:focus + .feld-label::before, .feld input:focus + .feld-label::after,
+.feld input:not(:placeholder-shown) + .feld-label::before, .feld input:not(:placeholder-shown) + .feld-label::after,
+.feld-label.oben::before, .feld-label.oben::after { font-size: 11px; }
+
+/* ---------------------------------------------------------------------------
+   Schnörkel: barocke Ornamente als SVG-Hintergründe, damit kein Markup nötig ist.
+   --orn-corner-* sind die vier gespiegelten Eckzierden, --orn-rule die Zierlinie.
+   --------------------------------------------------------------------------- */
+:root {
+  --orn-corner-tl: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40' fill='none' stroke='%23b08a3e' stroke-width='1.4' stroke-linecap='round'%3E%3Cpath d='M3 37V14Q3 3 14 3H37'/%3E%3Cpath d='M8 29V16Q8 8 16 8H29'/%3E%3Cpath d='M13 19q-1-7 6-6q5 1 3 6q-2 3-5 1'/%3E%3Cpath d='M3 24q5 1 5 6M24 3q1 5 6 5'/%3E%3Ccircle cx='3' cy='3' r='1.6' fill='%23b08a3e'/%3E%3C/svg%3E");
+  --orn-corner-tr: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40' fill='none' stroke='%23b08a3e' stroke-width='1.4' stroke-linecap='round'%3E%3Cg transform='translate(40 0) scale(-1 1)'%3E%3Cpath d='M3 37V14Q3 3 14 3H37'/%3E%3Cpath d='M8 29V16Q8 8 16 8H29'/%3E%3Cpath d='M13 19q-1-7 6-6q5 1 3 6q-2 3-5 1'/%3E%3Cpath d='M3 24q5 1 5 6M24 3q1 5 6 5'/%3E%3Ccircle cx='3' cy='3' r='1.6' fill='%23b08a3e'/%3E%3C/g%3E%3C/svg%3E");
+  --orn-corner-bl: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40' fill='none' stroke='%23b08a3e' stroke-width='1.4' stroke-linecap='round'%3E%3Cg transform='translate(0 40) scale(1 -1)'%3E%3Cpath d='M3 37V14Q3 3 14 3H37'/%3E%3Cpath d='M8 29V16Q8 8 16 8H29'/%3E%3Cpath d='M13 19q-1-7 6-6q5 1 3 6q-2 3-5 1'/%3E%3Cpath d='M3 24q5 1 5 6M24 3q1 5 6 5'/%3E%3Ccircle cx='3' cy='3' r='1.6' fill='%23b08a3e'/%3E%3C/g%3E%3C/svg%3E");
+  --orn-corner-br: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40' fill='none' stroke='%23b08a3e' stroke-width='1.4' stroke-linecap='round'%3E%3Cg transform='translate(40 40) scale(-1 -1)'%3E%3Cpath d='M3 37V14Q3 3 14 3H37'/%3E%3Cpath d='M8 29V16Q8 8 16 8H29'/%3E%3Cpath d='M13 19q-1-7 6-6q5 1 3 6q-2 3-5 1'/%3E%3Cpath d='M3 24q5 1 5 6M24 3q1 5 6 5'/%3E%3Ccircle cx='3' cy='3' r='1.6' fill='%23b08a3e'/%3E%3C/g%3E%3C/svg%3E");
+  --orn-rule: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='16' viewBox='0 0 240 16' fill='none' stroke='%23b08a3e' stroke-width='1.3' stroke-linecap='round'%3E%3Cpath d='M2 8H92M148 8H238'/%3E%3Cpath d='M92 8q6-7 13-2q3 3 0 5M148 8q-6-7-13-2q-3 3 0 5M92 8q6 7 13 2M148 8q-6 7-13 2'/%3E%3Cpath d='M120 2l6 6-6 6-6-6z' fill='%23b08a3e'/%3E%3Ccircle cx='108' cy='8' r='1.5' fill='%23b08a3e'/%3E%3Ccircle cx='132' cy='8' r='1.5' fill='%23b08a3e'/%3E%3C/svg%3E");
+}
+
+/* Zierrahmen: Die Ecken selbst sind Schnörkel. Ein 100×100-SVG (Rahmen um 5 px eingerückt, damit die Spiralen Platz haben)
+   wird per border-image in neun Teile geschnitten (je 35 px): Ecken bleiben unverzerrt (eingerollte Kerbe mit
+   Spirale und Siegelpunkt), Kanten und Fläche werden gestreckt. „fill“ malt das
+   Pergament mit, deshalb ist der eigentliche Hintergrund transparent. */
+:root {
+  --frame: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='100' height='100' viewBox='0 0 100 100' fill='none' stroke-linecap='round'><defs><g id='c'><path d='M18 4C19.5 -2 9 -3 6 2C3 7 9.5 12 12.5 7.5C14.5 4.5 10.5 3 9 5.5' stroke='%23b08a3e' stroke-width='1.5'/><path d='M4 18C-2 19.5 -3 9 2 6' stroke='%23b08a3e' stroke-width='1.5'/><path d='M15 15C19 12.5 23 14 24 18M15 15C12.5 19 14 23 18 24' stroke='%23b08a3e' stroke-width='1.2'/><circle cx='4' cy='4' r='1.8' fill='%237a1f1f'/></g></defs><g transform='translate(5 5)'><path d='M18 4H72A14 14 0 0 0 86 18V72A14 14 0 0 0 72 86H18A14 14 0 0 0 4 72V18A14 14 0 0 0 18 4Z' fill='%23f6eedb' stroke='%236b5537' stroke-width='1.6'/><path d='M22.33 9H67.67A19 19 0 0 0 81 22.33V67.67A19 19 0 0 0 67.67 81H22.33A19 19 0 0 0 9 67.67V22.33A19 19 0 0 0 22.33 9Z' stroke='%23b08a3e' stroke-width='1.2'/><use xlink:href='%23c'/><use xlink:href='%23c' transform='translate(90 0) scale(-1 1)'/><use xlink:href='%23c' transform='translate(0 90) scale(1 -1)'/><use xlink:href='%23c' transform='translate(90 90) scale(-1 -1)'/></g></svg>");
+}
+.card, dialog {
+  background: transparent;
+  border-style: solid;
+  border-width: 22px;
+  border-radius: 0;
+  border-image: var(--frame) 35 fill / 34px / 0 stretch; /* Bild breiter als der Rand: große Eckschnörkel, ragen ins Padding */
+}
+/* Seitlich nur so viel Rand, dass der Inhalt knapp innerhalb der Rahmenlinien beginnt;
+   oben und unten bleibt Platz für die großen Eckschnörkel. */
+.card { border-width: 22px 13px; padding: 14px 10px; }
+dialog { border-width: 30px 20px; border-image-width: 46px; }
+/* Kleine Kennzahl-Kacheln: schmaler Rahmen, damit Platz für Zahlen bleibt */
+.stats .card { border-width: 10px; border-image-width: 16px; padding: 4px 6px; }
+
+/* Zierlinie unter Fraktur-Überschriften */
+h1.display::after, h2.display::after {
+  content: '';
+  display: block;
+  width: min(200px, 70%);
+  height: 14px;
+  margin-top: 4px;
+  background: var(--orn-rule) no-repeat left center / contain;
+}
+
+/* Buttons präsent wie gestanzte Siegelplatten: gewölbter Verlauf, dunkle Fassung,
+   goldener Innenfaden, Schatten nach unten. Beim Überfahren heben sie sich leicht an,
+   beim Drücken sinken sie ein. Hauptknopf in Siegellackrot mit Goldrauten. */
+.btn {
+  border: 1.5px solid #5a4630; color: var(--ink);
+  background: linear-gradient(180deg, #fffaf0 0%, #f1e3c4 55%, #e3cfa4 100%);
+  box-shadow: inset 0 0 0 2px #fffaf0aa, inset 0 0 0 3px #b08a3e99, 0 2px 0 #5a463066, 0 3px 6px #2b211833;
+  text-shadow: 0 1px 0 #fffaf0;
+  transition: transform .08s ease, box-shadow .12s ease, filter .12s ease;
+}
+.btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #fffdf6 0%, #f6e9cc 55%, #e9d6ad 100%);
+  border-color: var(--blood); transform: translateY(-1px);
+  box-shadow: inset 0 0 0 2px #fffaf0aa, inset 0 0 0 3px #b08a3ecc, 0 3px 0 #5a463066, 0 6px 12px #2b211840;
+}
+.btn:active:not(:disabled) { transform: translateY(1px); box-shadow: inset 0 0 0 3px #b08a3e99, inset 0 2px 6px #2b211844; }
+.btn:disabled { box-shadow: inset 0 0 0 3px #b08a3e44; filter: saturate(.4); }
+.btn-primary {
+  border-color: #4a0f0f; color: #fff6e0; text-shadow: 0 1px 1px #00000066;
+  background: linear-gradient(180deg, #a23232 0%, #7a1f1f 55%, #5e1414 100%);
+  box-shadow: inset 0 0 0 2px #a2323299, inset 0 0 0 3px #e9c45acc, 0 2px 0 #3a0a0a99, 0 4px 10px #2b211855;
+}
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #b23a3a 0%, #8a2424 55%, #6a1818 100%);
+  border-color: #4a0f0f;
+  box-shadow: inset 0 0 0 2px #b23a3a99, inset 0 0 0 3px #f2d27acc, 0 3px 0 #3a0a0a99, 0 8px 16px #2b211866;
+}
+.btn-primary::before, .btn-primary::after { content: '◆'; font-size: 8px; color: var(--gold-light); margin: 0 8px; vertical-align: 2px; }
+
+/* Verschnörkelte Scrollbalken (WebKit/Blink): Rinne als Weinranke, Griff als goldener
+   Rollstab mit eingerollten Enden und roter Raute in der Mitte. Firefox kann keine
+   Bilder im Scrollbalken, dort bleibt Gold auf Pergament (unten). */
+:root {
+  --sb-vine: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='48' viewBox='0 0 16 48' fill='none' stroke='%23b08a3e' stroke-width='1.1' stroke-linecap='round'><path d='M8 0C10 8 6 16 8 24C10 32 6 40 8 48'/><path d='M8.5 10C12 8 14 10 13 12.5C12 14 10 13 10.5 11.5'/><path d='M7.5 34C4 32 2 34 3 36.5C4 38 6 37 5.5 35.5'/><circle cx='12' cy='22' r='.9' fill='%23b08a3e'/><circle cx='4' cy='46' r='.9' fill='%23b08a3e'/></svg>");
+  --sb-cap-top: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke-linecap='round'><path d='M8 16V9C8 4 13 3 14 6.5C15 9.5 11 11 10 8.5' stroke='%232b2118' stroke-width='1.6'/><path d='M8 9C8 4 3 3 2 6.5C1 9.5 5 11 6 8.5' stroke='%232b2118' stroke-width='1.6'/><circle cx='8' cy='2.5' r='1.8' fill='%237a1f1f'/></svg>");
+  --sb-cap-bottom: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke-linecap='round'><g transform='translate(0 16) scale(1 -1)'><path d='M8 16V9C8 4 13 3 14 6.5C15 9.5 11 11 10 8.5' stroke='%232b2118' stroke-width='1.6'/><path d='M8 9C8 4 3 3 2 6.5C1 9.5 5 11 6 8.5' stroke='%232b2118' stroke-width='1.6'/><circle cx='8' cy='2.5' r='1.8' fill='%237a1f1f'/></g></svg>");
+  --sb-jewel: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'><path d='M8 1.5L13 8L8 14.5L3 8Z' fill='%237a1f1f' stroke='%23f3dc94' stroke-width='1.2'/></svg>");
+  /* Goldener Stab in der Mitte des Griffs (Spalten 4–12) */
+  --sb-rod: linear-gradient(90deg, transparent 4px, #6b5537 4px, #b08a3e 5.5px, #f3dc94 7.5px, #e9c45a 9px, #8a6a22 11px, #2b2118 12px, transparent 12px);
+}
+::-webkit-scrollbar { width: 16px; height: 16px; }
+::-webkit-scrollbar-track {
+  background: var(--sb-vine) center top / 16px 48px repeat-y, #ede2c8;
+  border-left: 1px solid #cdbb94;
+}
+::-webkit-scrollbar-thumb {
+  /* Reihenfolge: Kappen und Raute über dem Stab; der Stab lässt oben/unten Platz für die Kappen */
+  background:
+    var(--sb-cap-top) center top / 16px 16px no-repeat,
+    var(--sb-cap-bottom) center bottom / 16px 16px no-repeat,
+    var(--sb-jewel) center / 16px 16px no-repeat,
+    var(--sb-rod) center / 16px calc(100% - 22px) no-repeat;
+  min-height: 64px;
+}
+::-webkit-scrollbar-thumb:hover {
+  filter: brightness(1.08);
+  background:
+    var(--sb-cap-top) center top / 16px 16px no-repeat,
+    var(--sb-cap-bottom) center bottom / 16px 16px no-repeat,
+    var(--sb-jewel) center / 18px 18px no-repeat,
+    linear-gradient(90deg, transparent 4px, #5a1414 4px, #a64b3a 6px, #e08a74 7.5px, #a64b3a 10px, #5a1414 12px, transparent 12px) center / 16px calc(100% - 22px) no-repeat;
+}
+::-webkit-scrollbar-corner { background: #ede2c8; }
+::-webkit-scrollbar-button { display: none; }
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-color: #b08a3e #ede2c8; scrollbar-width: thin; }
+}
+
+/* ---------------------------------------------------------------------------
+   C64-Skin: Retro-Hommage an das Original (Farben der C64-Palette, Pixelschrift
+   „Press Start 2P“, OFL-Lizenz). Gleiche Oberfläche, nur andere Darstellung.
+   Komponenten haben eigene (gekapselte) Styles, daher hier gezielt !important.
+   --------------------------------------------------------------------------- */
+:root[data-skin="c64"] {
+  --parchment: #6f4f25;   /* Orange */
+  --ground: #433900;      /* Braun */
+  --ground-dark: #000000;
+  --ink: #b8c76f;         /* Gelb als Schriftfarbe */
+  --ink-soft: #b8c76f;
+  --sepia: #9ad284;       /* Hellgrün für Nebentexte */
+  --line: #b8c76f;
+  --line-strong: #b8c76f;
+  --blood: #68372b;       /* Rot */
+  --blood-dark: #9a6759;
+  --prussian: #6c5eb5;
+  --gold: #b8c76f;
+  --gold-light: #ffffff;
+  --good: #9ad284;
+  --warn: #9a6759;
+  --font-display: 'Press Start 2P', monospace;
+  --font-label: 'Press Start 2P', monospace;
+  --font-body: 'Press Start 2P', monospace;
+}
+:root[data-skin="c64"] body { background: #433900; color: #b8c76f; }
+:root[data-skin="c64"] body * { font-size: 10px !important; line-height: 1.7 !important; letter-spacing: 0 !important; font-style: normal !important; }
+:root[data-skin="c64"] .display, :root[data-skin="c64"] .display * { font-size: 14px !important; line-height: 1.4 !important; }
+:root[data-skin="c64"] .num.v, :root[data-skin="c64"] .v { font-size: 13px !important; }
+:root[data-skin="c64"] .logo { font-size: 18px !important; color: #b8c76f !important; }
+
+/* Rahmen: statt Zierrahmen schlichte Blockrahmen wie auf dem C64 */
+:root[data-skin="c64"] .card, :root[data-skin="c64"] dialog, :root[data-skin="c64"] [role=listbox] {
+  border-image: none !important;
+  border: 4px solid #b8c76f !important;
+  border-radius: 0 !important;
+  background: #6f4f25 !important;
+  box-shadow: inset 0 0 0 3px #6f4f25, inset 0 0 0 5px #433900 !important;
+  filter: none !important;
+}
+:root[data-skin="c64"] dialog::backdrop { background: #000000cc; }
+:root[data-skin="c64"] .top { background: #000 !important; border-bottom: 4px solid #b8c76f !important; }
+:root[data-skin="c64"] footer { background: #000 !important; border-top: 4px solid #b8c76f !important; }
+:root[data-skin="c64"] h1.display::after, :root[data-skin="c64"] h2.display::after,
+:root[data-skin="c64"] .btn-primary::before, :root[data-skin="c64"] .btn-primary::after { display: none !important; }
+
+/* Bedienelemente: invertierte Blöcke wie im Original-Menü */
+:root[data-skin="c64"] .btn, :root[data-skin="c64"] button[role=combobox], :root[data-skin="c64"] .tool {
+  border-radius: 0 !important; border: 2px solid #b8c76f !important; background: #433900 !important; color: #b8c76f !important; box-shadow: none !important;
+}
+:root[data-skin="c64"] .btn:hover:not(:disabled), :root[data-skin="c64"] .btn-primary {
+  background: #b8c76f !important; color: #000 !important;
+}
+:root[data-skin="c64"] .feld-label { font-family: var(--font-label) !important; font-style: normal !important; color: #b8c76f !important; }
+:root[data-skin="c64"] .feld input:focus + .feld-label, :root[data-skin="c64"] .feld input:not(:placeholder-shown) + .feld-label, :root[data-skin="c64"] .feld-label.oben {
+  background: #000 !important; font-size: 9px !important; letter-spacing: 0 !important;
+}
+:root[data-skin="c64"] .feld-label::before, :root[data-skin="c64"] .feld-label::after { display: none; }
+:root[data-skin="c64"] .feld input { box-shadow: none !important; }
+:root[data-skin="c64"] input, :root[data-skin="c64"] .field input {
+  background: #000 !important; color: #b8c76f !important; border: 2px solid #b8c76f !important; border-radius: 0 !important;
+}
+:root[data-skin="c64"] li[role=option].active { background: #b8c76f !important; color: #000 !important; box-shadow: none !important; }
+:root[data-skin="c64"] ol li.current { background: #b8c76f !important; color: #000 !important; border-radius: 0 !important; }
+
+/* Karte in C64-Farben: blaues Meer, graue Nachbarn, Gelb-Schwarz-Schrift */
+:root[data-skin="c64"] .map-box svg > rect:first-of-type { fill: #352879 !important; }
+:root[data-skin="c64"] .map-box [fill="#e6dcc4"] { fill: #444444 !important; }
+:root[data-skin="c64"] .map-box [fill="#ede2c8"] { fill: #6f4f25 !important; }
+:root[data-skin="c64"] .map-box [fill="#bfd0d6"] { fill: #352879 !important; }
+:root[data-skin="c64"] .map-box text { fill: #ffffff !important; stroke: #000 !important; }
+:root[data-skin="c64"] .map-box path[stroke="#6b5537"] { stroke: #000 !important; }
+
+/* Schlachtfeld: grüne Wiese wie das Original-Schlachtfeld */
+:root[data-skin="c64"] [fill="#e6dcb6"] { fill: #588d43 !important; }
+:root[data-skin="c64"] [stroke="#d6c99d"] { stroke: #9ad284 !important; }
+
+/* Scrollbalken als schlichte Blöcke */
+:root[data-skin="c64"] ::-webkit-scrollbar-track { background: #433900 !important; border-left: 2px solid #b8c76f; }
+:root[data-skin="c64"] ::-webkit-scrollbar-thumb { background: #b8c76f !important; }
+:root[data-skin="c64"] .ruler .edit { color: #ffffff !important; }

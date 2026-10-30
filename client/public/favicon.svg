@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Favicon von KaiserReloaded: goldene Reichskrone auf dunklem Siegel mit Goldrand (Farben wie app.css) -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4dc8c"/><stop offset=".55" stop-color="#d9ac45"/><stop offset="1" stop-color="#9a7228"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="12" fill="#2b2118"/>
+  <rect x="4.5" y="4.5" width="55" height="55" rx="10" fill="none" stroke="#b08a3e" stroke-width="2"/>
+  <!-- Krone: Reif, drei Zacken mit Perlen, Bügel mit Kreuz -->
+  <path d="M14 44L11 22L22 32L32 16L42 32L53 22L50 44Z" fill="url(#g)" stroke="#6b4e1c" stroke-width="1.6" stroke-linejoin="round"/>
+  <rect x="13" y="43" width="38" height="8" rx="2" fill="url(#g)" stroke="#6b4e1c" stroke-width="1.6"/>
+  <circle cx="11" cy="21" r="3" fill="#f4dc8c" stroke="#6b4e1c" stroke-width="1.2"/>
+  <circle cx="53" cy="21" r="3" fill="#f4dc8c" stroke="#6b4e1c" stroke-width="1.2"/>
+  <path d="M32 14V6M28.5 9.5H35.5" stroke="#f4dc8c" stroke-width="2.6" stroke-linecap="round"/>
+  <circle cx="22" cy="47" r="2.2" fill="#a3262b"/><circle cx="32" cy="47" r="2.6" fill="#22508f"/><circle cx="42" cy="47" r="2.2" fill="#a3262b"/>
+</svg>

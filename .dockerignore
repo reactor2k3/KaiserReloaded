@@ -1,0 +1,7 @@
+# Nicht ins Build-Kontext: lokale Abhängigkeiten, Builds, Spielstände und Uploads
+client/node_modules
+client/dist
+server/kaiserd*.exe
+server/kaiser.db*
+server/media
+**/*.log

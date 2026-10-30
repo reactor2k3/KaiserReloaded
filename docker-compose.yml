@@ -1,0 +1,25 @@
+# KaiserReloaded als ein einziges Image (Spielserver + Client), ohne weitere Dienste.
+#   docker compose up -d      → zieht das fertige Image von ghcr.io, Spiel unter http://<server>:8080
+# Selbst bauen statt ziehen: die Zeile „build: .“ einkommentieren und „docker compose up -d --build“.
+# Spielstände, Ruhmeshalle und Uploads liegen im Volume „kaiser-data“.
+# HTTPS: Port 8080 hinter einen vorhandenen Reverse-Proxy oder Load-Balancer legen
+# (WebSocket /ws muss durchgereicht werden).
+
+services:
+  kaiser:
+    image: ghcr.io/reactor2k3/kaiserreloaded:latest
+    # build: .
+    container_name: kaiserreloaded
+    hostname: kaiserreloaded
+    environment:
+      TZ: Europe/Berlin   # Zeitzone für Protokollzeiten (Zeitzonendaten sind ins Programm eingebaut)
+    restart: unless-stopped
+    # Grenzen (Vorgaben: 10 Spiele, 6 Spieler je Spiel). Hinter eigenem Reverse-Proxy zusätzlich -trust-proxy.
+    # command: ["-max-games", "10", "-max-players", "6"]
+    ports:
+      - "8080:8080"
+    volumes:
+      - kaiser-data:/var/lib/kaiser
+
+volumes:
+  kaiser-data:
